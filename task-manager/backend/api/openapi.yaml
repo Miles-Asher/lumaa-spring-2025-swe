@@ -1,0 +1,206 @@
+openapi: '3.0.3'
+
+info:
+  description: simple task manager backend
+  version: 0.2.0
+  title: Task Manager API
+
+servers:
+  - url: http://localhost:3000/api/v0
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+      required:
+        - username
+        - password
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+    Token:
+      type: object
+      properties:
+        token:
+          type: string
+        id:
+          type: string
+          format: uuid
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        isComplete:
+          type: boolean
+      required:
+        - title
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        201:
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: Invalid input
+        409:
+          description: User already exists
+  
+  /auth/login:
+    post:
+      summary: Login a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: User logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        401:
+          description: Invalid username or password
+  
+  /tasks:
+    get:
+      description: Get all tasks optionally filtered by user
+      parameters:
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          required: false
+          description: Filter tasks by userId
+      responses:
+        200:
+          description: A list of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        401:
+          description: Unauthorized
+      security:
+        - bearerAuth: []
+
+    post:
+      description: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+      responses:
+        201:
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: Invalid input
+        401:
+          description: Unauthorized
+      security:
+        - bearerAuth: []
+
+  /tasks/{id}:
+    put:
+      description: Update an existing task
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the task to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+      responses:
+        200:
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        400:
+          description: Invalid input
+        401:
+          description: Unauthorized
+        404:
+          description: Task not found
+      security:
+        - bearerAuth: []
+
+    delete:
+      description: Delete a task
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: The ID of the task to delete
+      responses:
+        204:
+          description: Task deleted
+        400:
+          description: Invalid input
+        401:
+          description: Unauthorized
+        404:
+          description: Task not found
+      security:
+        - bearerAuth: []
